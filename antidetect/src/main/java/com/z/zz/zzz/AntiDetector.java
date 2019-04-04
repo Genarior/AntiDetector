@@ -9,12 +9,16 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.z.zz.zzz.emu.EmulatorDetector;
+import com.z.zz.zzz.xml.WhiteListEntry;
+import com.z.zz.zzz.xml.WhiteListXmlParser;
 
 import java.io.DataOutputStream;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 
 /**
@@ -37,6 +41,7 @@ public final class AntiDetector {
     private static int FLAG_SAFE = 0x0;
     private static AntiDetector antiDetector;
     private Context context;
+    private WhiteListXmlParser parser;
     private boolean isDebug;
     private boolean isSticky;
 
@@ -63,6 +68,29 @@ public final class AntiDetector {
             throw new NullPointerException("The instance of AntiDetector is null");
         }
         return antiDetector.checkAntiDetect();
+    }
+
+    private String getUniquePsuedoID() {
+        String serial = null;
+
+        String m_szDevIDShort = "35" +
+                Build.BOARD.length() % 10 + Build.BRAND.length() % 10 +
+                Build.CPU_ABI.length() % 10 + Build.DEVICE.length() % 10 +
+                Build.DISPLAY.length() % 10 + Build.HOST.length() % 10 +
+                Build.ID.length() % 10 + Build.MANUFACTURER.length() % 10 +
+                Build.MODEL.length() % 10 + Build.PRODUCT.length() % 10 +
+                Build.TAGS.length() % 10 + Build.TYPE.length() % 10 +
+                Build.USER.length() % 10; //13 位
+        try {
+            serial = android.os.Build.class.getField("SERIAL").get(null).toString();
+            Log.v(TAG, "Build.SERIAL=" + serial);
+            //API>=9 使用serial号
+            return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
+        } catch (Exception exception) {
+            serial = new AndroidID(context).getAndroidID();
+        }
+        //使用硬件信息拼凑出来的15位号码
+        return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
     }
 
     private boolean isRooted() {
@@ -104,6 +132,10 @@ public final class AntiDetector {
 
     public AntiDetector setDebug(boolean isDebug) {
         this.isDebug = isDebug;
+        if (isDebug) {
+            parser = new WhiteListXmlParser();
+            parser.parse(context);
+        }
         return this;
     }
 
@@ -136,6 +168,32 @@ public final class AntiDetector {
     private boolean checkAntiDetect() {
         synchronized (AntiDetector.class) {
             FLAG_SAFE = 0x0;
+
+            if (parser != null) {
+                String androidId = new AndroidID(context).getAndroidID();
+                Log.v(TAG, "androidId: " + androidId);
+                String serial = getUniquePsuedoID();
+                Log.v(TAG, "serial: " + serial);
+
+                if (!TextUtils.isEmpty(serial)) {
+                    Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
+                    while (it.hasNext()) {
+                        if (serial.equals(it.next().androidId)) {
+                            return false;
+                        }
+                    }
+                }
+
+                if (!TextUtils.isEmpty(androidId)) {
+                    Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
+                    while (it.hasNext()) {
+                        if (androidId.equals(it.next().androidId)) {
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            }
 
             if (isSticky) {
                 boolean inDevelopmentMode = inDevelopmentMode();
