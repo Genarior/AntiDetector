@@ -83,7 +83,7 @@ public final class AntiDetector {
                 Build.USER.length() % 10; //13 位
         try {
             serial = android.os.Build.class.getField("SERIAL").get(null).toString();
-            Log.v(TAG, "Build.SERIAL=" + serial);
+            if (isDebug) Log.v(TAG, "Build.SERIAL: " + serial);
             //API>=9 使用serial号
             return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
         } catch (Exception exception) {
@@ -169,30 +169,37 @@ public final class AntiDetector {
         synchronized (AntiDetector.class) {
             FLAG_SAFE = 0x0;
 
-            if (parser != null) {
-                String androidId = new AndroidID(context).getAndroidID();
-                Log.v(TAG, "androidId: " + androidId);
-                String serial = getUniquePsuedoID();
-                Log.v(TAG, "serial: " + serial);
+            try {
+                if (parser != null) {
+                    String androidId = new AndroidID(context).getAndroidID();
+                    if (isDebug) Log.v(TAG, "androidId: " + androidId);
+                    String serial = getUniquePsuedoID();
+                    if (isDebug) Log.v(TAG, "serial: " + serial);
 
-                if (!TextUtils.isEmpty(serial)) {
-                    Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
-                    while (it.hasNext()) {
-                        if (serial.equals(it.next().androidId)) {
-                            return false;
+                    if (!TextUtils.isEmpty(serial)) {
+                        Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
+                        while (it.hasNext()) {
+                            String id = it.next().androidId;
+                            if (serial.equals(id)) {
+                                Log.i(TAG, "The device [" + id + "] is in the white list.");
+                                return false;
+                            }
+                        }
+                    }
+
+                    if (!TextUtils.isEmpty(androidId)) {
+                        Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
+                        while (it.hasNext()) {
+                            String id = it.next().androidId;
+                            if (androidId.equals(id)) {
+                                Log.i(TAG, "The device [" + id + "] is in the white list.");
+                                return false;
+                            }
                         }
                     }
                 }
-
-                if (!TextUtils.isEmpty(androidId)) {
-                    Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
-                    while (it.hasNext()) {
-                        if (androidId.equals(it.next().androidId)) {
-                            return false;
-                        }
-                    }
-                    return false;
-                }
+            } catch (Exception e) {
+                // ignored
             }
 
             if (isSticky) {

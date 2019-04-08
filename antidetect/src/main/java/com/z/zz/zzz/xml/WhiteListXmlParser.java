@@ -27,12 +27,13 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class WhiteListXmlParser {
     private static String TAG = "WhiteListXmlParser";
     private String androidId = "";
-    private List<WhiteListEntry> pluginEntries = new ArrayList<>();
+    private List<WhiteListEntry> pluginEntries = new LinkedList<>();
 
     public List<WhiteListEntry> getPluginEntries() {
         return pluginEntries;
@@ -64,9 +65,9 @@ public class WhiteListXmlParser {
             try {
                 eventType = xml.next();
             } catch (XmlPullParserException e) {
-                e.printStackTrace();
+                Log.e(TAG, "parse error", e);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "parse error", e);
             }
         }
 
@@ -75,14 +76,14 @@ public class WhiteListXmlParser {
 
     private void handleStartTag(XmlPullParser xml) {
         String strNode = xml.getName();
-        if (strNode.equals("android_id")) {
+        if ("android_id".equals(strNode)) {
             androidId = xml.getAttributeValue(null, "id");
         }
     }
 
     private void handleEndTag(XmlPullParser xml) {
         String strNode = xml.getName();
-        if (strNode.equals("android_id")) {
+        if ("android_id".equals(strNode)) {
             pluginEntries.add(new WhiteListEntry(androidId));
 
             androidId = "";
