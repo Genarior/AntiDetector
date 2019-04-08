@@ -4,6 +4,9 @@ buildscript {
     repositories {
         google()
         jcenter()
+        maven {
+            url 'https://dl.bintray.com/zizzy0301/zizzy-nbb'
+        }
         
     }
     dependencies {
@@ -18,18 +21,12 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        maven {
+            url 'https://dl.bintray.com/zizzy0301/zizzy-nbb'
+        }
     }
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
-}
-
-ext {
-    compileSdkVersion = 27
-    buildToolsVersion = "27.0.3"
-    minSdkVersion = '16'
-    targetSdkVersion = '28'
-    androidSupportVersion = '27.1.1'
 }
