@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontwarn com.z.zz.zzz.**
+-keep class com.z.zz.zzz.** { *; }
+-keep interface com.z.zz.zzz.** { *; }
