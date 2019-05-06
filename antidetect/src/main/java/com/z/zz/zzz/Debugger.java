@@ -4,7 +4,6 @@ import android.os.Debug;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
@@ -29,9 +28,6 @@ class Debugger {
      * <p>
      * Easy to circumvent, the usage ITW was a native thread constantly doing this every three seconds - and would cause
      * the application to crash if it was detected.
-     *
-     * @return
-     * @throws IOException
      */
     static boolean hasTracerPid() {
         BufferedReader reader = null;
@@ -54,7 +50,7 @@ class Debugger {
         } finally {
             try {
                 reader.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
             }
         }
         return false;
@@ -62,8 +58,6 @@ class Debugger {
 
     /**
      * This was reversed from a sample someone was submitting to sandboxes for a thesis, can't find paper anymore
-     *
-     * @throws IOException
      */
     static boolean hasAdbInEmulator() {
         boolean adbInEmulator = false;
@@ -104,7 +98,7 @@ class Debugger {
         } finally {
             try {
                 reader.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
             }
         }
 

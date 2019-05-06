@@ -25,8 +25,6 @@ import android.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -66,7 +64,7 @@ public class WhiteListXmlParser {
                 eventType = xml.next();
             } catch (XmlPullParserException e) {
                 Log.e(TAG, "parse error", e);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "parse error", e);
             }
         }
