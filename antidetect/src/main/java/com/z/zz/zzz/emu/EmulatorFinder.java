@@ -103,9 +103,6 @@ final class EmulatorFinder {
         if (!checkNetworkOperatorName(context)) {
             flag |= (0x1 << 19);
         }
-        if (!checkNetworkOperatorName(context)) {
-            flag |= (0x1 << 19);
-        }
 
         log("findEmulatorFeatureFlag: " + flag);
 

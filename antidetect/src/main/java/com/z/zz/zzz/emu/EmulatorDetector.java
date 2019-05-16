@@ -7,9 +7,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -110,6 +114,7 @@ public final class EmulatorDetector {
     //    private boolean isTelephony = false;
     private boolean isCheckPackage = true;
     private List<String> mListPackageName = new ArrayList<>();
+    private static JSONObject jsonDump;
 
     private EmulatorDetector(Context pContext) {
         mContext = pContext;
@@ -127,16 +132,38 @@ public final class EmulatorDetector {
         return mEmulatorDetector;
     }
 
-    public static String dumpBuildInfo() {
-        return "\n>>> begin dump build info ------------------------------------" +
-                "\n\t\tPRODUCT: " + Build.PRODUCT +
-                "\n\t\tMANUFACTURER: " + Build.MANUFACTURER +
-                "\n\t\tBRAND: " + Build.BRAND +
-                "\n\t\tDEVICE: " + Build.DEVICE +
-                "\n\t\tMODEL: " + Build.MODEL +
-                "\n\t\tHARDWARE: " + Build.HARDWARE +
-                "\n\t\tFINGERPRINT: " + Build.FINGERPRINT +
-                "\n>>> end dump build info --------------------------------------";
+    private static String dumpBuildInfo() {
+        JSONObject jo = new JSONObject();
+        try {
+            putJsonSafed(jo, "PD", Build.PRODUCT);
+            putJsonSafed(jo, "MA", Build.MANUFACTURER);
+            putJsonSafed(jo, "BR", Build.BRAND);
+            putJsonSafed(jo, "DE", Build.DEVICE);
+            putJsonSafed(jo, "MO", Build.MODEL);
+            putJsonSafed(jo, "HW", Build.HARDWARE);
+            putJsonSafed(jo, "BL", Build.BOOTLOADER);
+            putJsonSafed(jo, "FP", Build.FINGERPRINT);
+            putJsonSafed(jo, "SE", Build.SERIAL);
+        } catch (Exception e) {
+        }
+
+        return jo.toString();
+    }
+
+    public static String dump() {
+        if (jsonDump == null) {
+            return null;
+        }
+        return jsonDump.toString();
+    }
+
+    public static JSONObject putJsonSafed(@NonNull JSONObject json, @NonNull String name, @NonNull Object value) {
+        try {
+            return json.put(name, value);
+        } catch (JSONException e) {
+        }
+
+        return json;
     }
 
     static void log(String str) {
@@ -196,19 +223,19 @@ public final class EmulatorDetector {
 //    }
 
     public List<String> getPackageNameList() {
-        return this.mListPackageName;
+        return mListPackageName;
     }
 
     public boolean detect() {
-        boolean result = false;
+        jsonDump = new JSONObject();
 
-        log(dumpBuildInfo());
+        boolean result;
 
         // Check Emu flag
-        if (!result) {
-            result = EmulatorFinder.findEmulatorFeatureFlag(mContext) != 0x0;
-            log(">>> Find emulator feature flag: " + result);
-        }
+        int flag = EmulatorFinder.findEmulatorFeatureFlag(mContext);
+        result = flag != 0x0;
+        log(">>> Find emulator feature flag: " + result);
+        putJsonSafed(jsonDump, "emu_flag", Integer.toBinaryString(flag));
 
         // Check Basic
         if (!result) {
@@ -228,6 +255,8 @@ public final class EmulatorDetector {
             log(">>> Check Package Name: " + result);
         }
 
+        log(dumpBuildInfo());
+
         return result;
     }
 
@@ -246,8 +275,10 @@ public final class EmulatorDetector {
                 || (BRAND.compareTo("generic") == 0) || (DEVICE.compareTo("generic") == 0)
                 || (MODEL.compareTo("sdk") == 0) || (PRODUCT.compareTo("sdk") == 0)
                 || (HARDWARE.compareTo("goldfish") == 0)) {
+            putJsonSafed(jsonDump, "emu_bld", true);
             return true;
         }
+        putJsonSafed(jsonDump, "emu_bld", false);
         return false;
     }
 
@@ -270,10 +301,17 @@ public final class EmulatorDetector {
                 || Build.PRODUCT.toLowerCase().contains("nox")
                 || Build.SERIAL.toLowerCase().contains("nox");
 
-        if (result) return true;
+        if (result) {
+            putJsonSafed(jsonDump, "bas", result);
+            return true;
+        }
         result |= Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic");
-        if (result) return true;
+        if (result) {
+            putJsonSafed(jsonDump, "bas", result);
+            return true;
+        }
         result |= "google_sdk".equals(Build.PRODUCT);
+        putJsonSafed(jsonDump, "bas", result);
         return result;
     }
 
@@ -286,6 +324,7 @@ public final class EmulatorDetector {
                 || checkFiles(PIPES, "Pipes")
                 || checkIp()
                 || (checkQEmuProps() && checkFiles(X86_FILES, "X86"));
+        putJsonSafed(jsonDump, "adv", result);
         return result;
     }
 
@@ -358,6 +397,7 @@ public final class EmulatorDetector {
 
     private boolean checkPackageName() {
         if (!isCheckPackage || mListPackageName.isEmpty()) {
+            putJsonSafed(jsonDump, "pkg", false);
             return false;
         }
         final PackageManager packageManager = mContext.getPackageManager();
@@ -366,10 +406,12 @@ public final class EmulatorDetector {
             if (tryIntent != null) {
                 final List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
                 if (!resolveInfos.isEmpty()) {
+                    putJsonSafed(jsonDump, "pkg", true);
                     return true;
                 }
             }
         }
+        putJsonSafed(jsonDump, "pkg", false);
         return false;
     }
 

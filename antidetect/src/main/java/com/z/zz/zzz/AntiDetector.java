@@ -284,7 +284,7 @@ public final class AntiDetector {
                 .detect();
         if (isDebug) {
             Log.d(TAG, ">>> isEmulator cost " + (System.currentTimeMillis() - start) + "ms "
-                    + ": " + isEmulator + getCheckInfo());
+                    + ": " + isEmulator + " >>> " + getCheckInfo());
         }
         if (isEmulator) {
             FLAG_SAFE |= FLAG_IS_EMULATOR;
@@ -293,7 +293,7 @@ public final class AntiDetector {
     }
 
     private String getCheckInfo() {
-        return EmulatorDetector.dumpBuildInfo();
+        return EmulatorDetector.dump();
     }
 
     /**
