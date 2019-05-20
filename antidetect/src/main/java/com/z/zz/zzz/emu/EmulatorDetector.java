@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
 
@@ -235,7 +236,11 @@ public final class EmulatorDetector {
         int flag = EmulatorFinder.findEmulatorFeatureFlag(mContext);
         result = flag != 0x0;
         log(">>> Find emulator feature flag: " + result);
-        putJsonSafed(jsonDump, "emu_flag", Integer.toBinaryString(flag));
+        try {
+            putJsonSafed(jsonDump, "emu_flag", formatBinaryString(flag));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Check Basic
         if (!result) {
@@ -258,6 +263,29 @@ public final class EmulatorDetector {
         log(dumpBuildInfo());
 
         return result;
+    }
+
+    private String formatBinaryString(int flag) {
+        StringBuilder builder = new StringBuilder();
+        Stack<Character> stack = new Stack<>();
+        String binStr = Integer.toBinaryString(flag);
+        log("<<< binStr: " + binStr);
+
+        CharSequence cs = binStr.subSequence(0, binStr.length());
+        int len = cs.length();
+        int k = 0;
+        for (int i = len; i > 0; i--) {
+            stack.add(cs.charAt(i - 1));
+            if ((len - i + 1) % 3 == 0) {
+                stack.add(',');
+                k++;
+            }
+            k++;
+        }
+        for (int i = 0; i < k; i++) {
+            builder.append(stack.pop());
+        }
+        return builder.toString();
     }
 
     private boolean hasEmulatorBuild() {
